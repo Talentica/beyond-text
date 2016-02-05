@@ -1,0 +1,43 @@
+message root {
+  optional binary viewer_id (UTF8);
+  optional binary viewer_session_id (UTF8);
+  optional binary date_time (UTF8);
+  optional binary banner (UTF8);
+  optional binary creative_id (UTF8);
+  optional binary site (UTF8);
+  optional binary channel (UTF8);
+  optional binary channel_ids (UTF8);
+  optional binary language (UTF8);
+  optional binary ip_address (UTF8);
+  optional binary country (UTF8);
+  optional binary host_name (UTF8);
+  optional binary https (UTF8);
+  optional binary domain (UTF8);
+  optional binary page (UTF8);
+  optional binary query (UTF8);
+  optional binary referer (UTF8);
+  optional binary search_term (UTF8);
+  optional binary user_agent (UTF8);
+  optional binary platform (UTF8);
+  optional binary browser (UTF8);
+  optional binary max_https (UTF8);
+  optional binary geo_region (UTF8);
+  optional binary geo_city (UTF8);
+  optional binary geo_postal_code (UTF8);
+  optional binary geo_latitude (UTF8);
+  optional binary geo_longitude (UTF8);
+  optional binary geo_dma_code (UTF8);
+  optional binary geo_area_code (UTF8);
+  optional binary geo_organisation (UTF8);
+  optional binary geo_netspeed (UTF8);
+  optional binary geo_continent (UTF8);
+  optional binary operator (UTF8);
+  optional binary brand_name (UTF8);
+  optional binary model_name (UTF8);
+  optional binary type (UTF8);
+  optional binary target_params (UTF8);
+  optional binary agency_id (UTF8);
+  optional binary raw_log_type (UTF8);
+}
+
+
