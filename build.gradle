@@ -63,7 +63,7 @@ dependencies {
 
 jar {
 manifest {
-attributes 'Main-Class': 'com.avro.TextToAvro'
+attributes 'Main-Class': 'com.avro.TextToAvro_2'
 }
 }
 
