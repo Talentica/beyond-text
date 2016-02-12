@@ -7,15 +7,21 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 
 import java.util.*;
+
 import org.apache.avro.Schema;
+import org.apache.avro.Schema.Field;
 import org.apache.avro.Schema.Type;
+import org.apache.avro.file.DataFileReader;
 import org.apache.avro.generic.GenericArray;
 import org.apache.avro.generic.GenericData;
+import org.apache.avro.generic.GenericDatumReader;
 import org.apache.avro.generic.GenericRecord;
+import org.apache.avro.io.DatumReader;
 import org.apache.avro.mapred.AvroKey;
 import org.apache.avro.mapred.AvroWrapper;
 import org.apache.avro.mapred.Pair;
 import org.apache.avro.mapreduce.AvroJob;
+import org.apache.avro.mapreduce.AvroKeyInputFormat;
 import org.apache.avro.mapreduce.AvroKeyOutputFormat;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
@@ -34,17 +40,21 @@ import org.apache.hadoop.mapreduce.Mapper.Context;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
+
+import parquet.avro.AvroParquetOutputFormat;
+import parquet.hadoop.metadata.CompressionCodecName;
 
 import com.Ostermiller.util.CSVParser;
 /**
 * The classic WordCount example modified to output Avro Pair<CharSequence,
 * Integer> records instead of text.
 */
-public class TextToAvro_2 extends Configured implements Tool {
+public class AvroToText extends Configured implements Tool {
 public static class Map
-extends Mapper<LongWritable, Text, AvroKey<GenericRecord>, NullWritable> {
+extends Mapper<AvroKey<GenericRecord>, NullWritable, Text, NullWritable> {
     
     String schema1;
     public void setup(Context context) throws IOException , InterruptedException{
@@ -57,7 +67,7 @@ extends Mapper<LongWritable, Text, AvroKey<GenericRecord>, NullWritable> {
 
             }
 
-public void map(LongWritable key, Text value, Context context)
+public void map(AvroKey<GenericRecord> key, NullWritable value, Context context)
 throws IOException, InterruptedException {
     //InputStream stream = new ByteArrayInputStream(value.toString().getBytes(StandardCharsets.UTF_8));
     
@@ -68,39 +78,42 @@ throws IOException, InterruptedException {
     FileSystem fs = FileSystem.get(context.getConfiguration());
        InputStream in = fs.open(p);
     Schema schema3 = new Schema.Parser().parse(in);
-    //Schema schema3 = new Schema.Parser().parse(new File("/home/edureka/Downloads/twitter.avsc"));
-    GenericRecord e1 = new GenericData.Record(schema3);
+
+    List<Field> l = schema3.getFields();
     
-     System.out.print("genericrecord" + e1);
-     String line = value.toString();
-     InputStream is = new ByteArrayInputStream(line.getBytes("UTF-8"));
-        CSVParser cp =null;
-        String[] nextLine ;
-        cp = new CSVParser(is);
+    System.out.print("length of schema" + l.size());
+    //Schema schema3 = new Schema.Parser().parse(new File("/home/edureka/Downloads/twitter.avsc"));
+
+    //DatumReader    <GenericRecord> datumReader    =    new    GenericDatumReader<GenericRecord>(schema3);
+//    GenericRecord e1 = new GenericData.Record(schema3);
+    
+//    DataFileReader<GenericRecord>dataFileReader=new DataFileReader<GenericRecord>(new File("/home/Hadoop/Avro_Work/with_code_genfile/emp.avro"),    datumReader);
+    //GenericRecord em=null;
+    //while(dataFileReader.hasNext()){
+    //    em = dataFileReader.next(em);
+        System.out.print("em");
         
-    nextLine = cp.getLine();
-        
-    System.out.print("length" + nextLine.length);
-        for(int i=0 ;i< nextLine.length; i++){
-            if(i==2){
-                
-                e1.put(i, Long.valueOf(nextLine[i]));
-            }
-            else{
-            
-            System.out.print("lines" + nextLine[i]);
-            e1.put(i, nextLine[i]);
-            }
-        }
     
     // e1.put(0, "a");
     // e1.put(1, "b");
     // long v= 1366150681;
     // e1.put(2,v );
     
-     AvroKey<GenericRecord> key1 = new AvroKey<GenericRecord>(e1);
-    
-    context.write(key1, NullWritable.get());
+    // AvroKey<GenericRecord> key1 = new AvroKey<GenericRecord>(e1);
+        String a="";
+         //String d="";
+      for(int i=0;i< l.size();i++){
+          if(a.equals("")){
+              a = key.datum().get(i).toString();
+          }
+          else
+          {
+              a = a + "," + key.datum().get(i).toString();
+          }
+        
+      }
+       
+      context.write(new Text(a), NullWritable.get());
 }
 }
 
@@ -111,8 +124,8 @@ System.err.println("Usage: AvroWordCount <input path> <output path>");
 return -1;
 }*/
 Job job = new Job(getConf());
-job.setJarByClass(TextToAvro_2.class);
-job.setJobName("TextToAvro_2");
+job.setJarByClass(AvroToText.class);
+job.setJobName("AvroToText");
 // We call setOutputSchema first so we can override the configuration
 // parameters it sets
 String s = args[0];
@@ -123,24 +136,28 @@ InputStream in = fs.open(p);
 Schema schema = new Schema.Parser().parse(in);
 System.out.print("schema"+schema);
 job.getConfiguration().set("schema2", s);
-AvroJob.setOutputKeySchema(job,schema);
-AvroJob.setOutputValueSchema(job,Schema.create(Type.NULL));
-//job.setOutputValueClass(NullWritable.class);
+FileInputFormat.addInputPath(job, new Path(args[1]));
+job.setInputFormatClass(AvroKeyInputFormat.class);
+AvroJob.setInputKeySchema(job, schema);
+
+job.setOutputFormatClass(TextOutputFormat.class);
+TextOutputFormat.setOutputPath(job, new Path(args[2]));
+
+/* Impala likes Parquet files to have only a single row group.
+* Setting the block size to a larger value helps ensure this to
+* be the case, at the expense of buffering the output of the
+* entire mapper's split in memory.
+*
+* It would be better to set this based on the files' block size,
+* using fs.getFileStatus or fs.listStatus.
+*/
+AvroParquetOutputFormat.setBlockSize(job, 500 * 1024 * 1024);
 job.setMapperClass(Map.class);
 job.setNumReduceTasks(0);
-job.setInputFormatClass(TextInputFormat.class);
-//job.setMapOutputKeyClass(Text.class);
-//job.setMapOutputValueClass(IntWritable.class);
-//job.setSortComparatorClass(Text.Comparator.class);
-FileInputFormat.setInputPaths(job, new Path(args[1]));
-job.setOutputFormatClass(AvroKeyOutputFormat.class);
-AvroKeyOutputFormat.setOutputPath(job, new Path(args[2]));
-job.waitForCompletion(true);
-return 0;
+return job.waitForCompletion(true) ? 0 : 1;
 }
 public static void main(String[] args) throws Exception {
-int res =
-ToolRunner.run(new Configuration(), new TextToAvro_2(), args);
+int res =ToolRunner.run(new Configuration(), new AvroToText(), args);
 System.exit(res);
 }
 }
