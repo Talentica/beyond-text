@@ -52,7 +52,7 @@ import com.Ostermiller.util.CSVParser;
 * The classic WordCount example modified to output Avro Pair<CharSequence,
 * Integer> records instead of text.
 */
-public class AvroToText extends Configured implements Tool {
+public class TextToAvro_2 extends Configured implements Tool {
 public static class Map
 extends Mapper<AvroKey<GenericRecord>, NullWritable, Text, NullWritable> {
     
@@ -124,8 +124,8 @@ System.err.println("Usage: AvroWordCount <input path> <output path>");
 return -1;
 }*/
 Job job = new Job(getConf());
-job.setJarByClass(AvroToText.class);
-job.setJobName("AvroToText");
+job.setJarByClass(TextToAvro_2.class);
+job.setJobName("AvroToText_2");
 // We call setOutputSchema first so we can override the configuration
 // parameters it sets
 String s = args[0];
@@ -157,7 +157,7 @@ job.setNumReduceTasks(0);
 return job.waitForCompletion(true) ? 0 : 1;
 }
 public static void main(String[] args) throws Exception {
-int res =ToolRunner.run(new Configuration(), new AvroToText(), args);
+int res =ToolRunner.run(new Configuration(), new TextToAvro_2(), args);
 System.exit(res);
 }
 }
